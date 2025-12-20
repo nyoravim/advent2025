@@ -22,21 +22,27 @@ impl Rotation {
             Direction::Right => 1,
         };
 
-        let measure = self.measure % POSITION_COUNT;
+        let measure = self.measure;
         factor * measure as i32
     }
 }
 
-fn apply_rotation(pos: u32, rotation: &Rotation) -> u32 {
+struct AppliedRotation {
+    new_pos: u32,
+    zero_count: u32,
+}
+
+fn apply_rotation(pos: u32, rotation: &Rotation) -> AppliedRotation {
     let increment = rotation.to_increment();
     let uncorrected = pos as i32 + increment;
 
-    let corrected = match uncorrected {
-        x if x < 0 => uncorrected + POSITION_COUNT as i32,
-        _ => uncorrected % POSITION_COUNT as i32,
-    };
+    let corrected = uncorrected.rem_euclid(POSITION_COUNT as i32);
+    let zero_count = (uncorrected - corrected) / POSITION_COUNT as i32;
 
-    corrected as u32
+    AppliedRotation {
+        new_pos: corrected as u32,
+        zero_count: zero_count.abs() as u32,
+    }
 }
 
 fn parse_rotation(data: &str) -> Result<Rotation, Box<dyn Error>> {
@@ -64,11 +70,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     for line in contents.lines().map(|l| l.trim()) {
         let rotation = parse_rotation(line)?;
 
-        pos = apply_rotation(pos, &rotation);
+        let applied = apply_rotation(pos, &rotation);
+        pos = applied.new_pos;
+
         println!("Rotation {line} moved dial to {pos}");
 
-        if pos == 0 {
-            count += 1;
+        if applied.zero_count > 0 {
+            count += applied.zero_count;
             println!("Incrementing count to {count}!");
         }
     }
