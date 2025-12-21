@@ -37,44 +37,63 @@ impl FromStr for IdRange {
     }
 }
 
+fn find_pattern(id: u64, factor: u64) -> Option<u64> {
+    let mut value = id % factor;
+    let mut remainder = id / factor;
+
+    loop {
+        // no more data to process
+        if remainder == 0 {
+            return Some(value);
+        }
+
+        // advance in id and get next value
+        let next = remainder % factor;
+
+        // if the next value does not equal, then there is no pattern
+        if value != next {
+            return None;
+        }
+
+        // advance
+        value = next;
+        remainder /= factor;
+    }
+}
+
+fn is_invalid_id(id: u64, base: u64) -> bool {
+    let mut factor = base;
+    loop {
+        if factor > id {
+            return false; // no point
+        }
+
+        if let Some(pattern) = find_pattern(id, factor) {
+            let previous_factor = factor / base;
+            if pattern >= previous_factor {
+                // no leading zero, we're good
+                return true;
+            }
+        }
+
+        factor *= base;
+    }
+}
+
 fn sum_invalid(range: &IdRange, base: u64) -> u64 {
     let mut sum = 0;
     let mut num_invalid = 0;
 
     println!("Range [{},{}]", range.first, range.last);
-    let mut factor = base;
-
     for id in range.first..=range.last {
-        let mut current_factor = factor;
-        loop {
-            let lesser = id % current_factor;
-            let greater = id / current_factor;
-
-            match lesser.cmp(&greater) {
-                Ordering::Less => (),
-                Ordering::Greater => break,
-                Ordering::Equal => {
-                    let previous_factor = current_factor / base;
-                    if lesser >= previous_factor {
-                        println!("Invalid ID found: {id}");
-
-                        // confusing: update the "factor" to the "current factor"
-                        // ids only increase
-                        // this is to improve efficiency and not do extra work
-                        factor = current_factor;
-
-                        sum += id;
-                        num_invalid += 1;
-
-                        break;
-                    }
-
-                    // otherwise, leading zero. we dont care
-                }
-            };
-
-            current_factor *= base;
+        if !is_invalid_id(id, base) {
+            continue;
         }
+
+        println!("Invalid ID: {id}");
+
+        sum += id;
+        num_invalid += 1;
     }
 
     println!("Sum for range: {sum}");
