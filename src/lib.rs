@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -45,4 +46,13 @@ pub fn open_input(day: u32) -> Result<File, Box<dyn Error>> {
     let file = File::open(file_path)?;
 
     Ok(file)
+}
+
+pub fn read_input(day: u32) -> Result<String, Box<dyn Error>> {
+    let mut input = open_input(day)?;
+
+    let mut contents = String::new();
+    input.read_to_string(&mut contents)?;
+
+    Ok(contents)
 }
