@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::error::Error;
 use std::str::FromStr;
 
