@@ -1,40 +1,6 @@
 use std::error::Error;
-use std::str::FromStr;
 
-use advent25::read_input;
-
-struct IdRange {
-    first: u64,
-    last: u64,
-}
-
-impl IdRange {
-    fn new(first: u64, last: u64) -> Result<Self, &'static str> {
-        if first > last {
-            Err("First cannot succeed last!")
-        } else if first == 0 {
-            Err("0 is not an ID!")
-        } else {
-            Ok(IdRange { first, last })
-        }
-    }
-}
-
-impl FromStr for IdRange {
-    type Err = Box<dyn Error>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Some(pos) = s.find("-") {
-            let (first_str, remainder) = s.split_at(pos);
-            let (_, last_str) = remainder.split_at(1);
-
-            let range = Self::new(first_str.parse()?, last_str.parse()?)?;
-            Ok(range)
-        } else {
-            Err("No range delimiter!".into())
-        }
-    }
-}
+use advent25::{read_input, IdRange};
 
 fn find_pattern(id: u64, factor: u64) -> Option<u64> {
     let mut value = id % factor;
@@ -83,8 +49,8 @@ fn sum_invalid(range: &IdRange, base: u64) -> u64 {
     let mut sum = 0;
     let mut num_invalid = 0;
 
-    println!("Range [{},{}]", range.first, range.last);
-    for id in range.first..=range.last {
+    println!("Range {range}");
+    for id in range.ids() {
         if !is_invalid_id(id, base) {
             continue;
         }
