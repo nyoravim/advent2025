@@ -44,29 +44,41 @@ fn is_ingredient_fresh(id: u64, ranges: &[IdRange]) -> bool {
     ranges.iter().any(|range| range.contains(id))
 }
 
-fn merge_ranges(ranges: &[IdRange]) -> Option<Vec<IdRange>> {
+struct MergedRanges {
+    globs: Vec<IdRange>,
+    done: bool,
+}
+
+fn merge_ranges(ranges: Vec<IdRange>) -> MergedRanges {
     let mut globs: Vec<IdRange> = Vec::new();
+
+    let initial_count = ranges.len();
     for range in ranges {
-        if !globs.iter_mut().any(|g| g.merge(range)) {
-            globs.push(range.clone());
+        if !globs.iter_mut().any(|g| g.merge(&range)) {
+            globs.push(range);
         }
     }
 
-    match globs.len().cmp(&ranges.len()) {
-        Ordering::Less => Some(globs),
-        Ordering::Equal => None,
-        Ordering::Greater => panic!("dude how the fuck")
+    let final_count = globs.len();
+    MergedRanges {
+        globs,
+        done: match final_count.cmp(&initial_count) {
+            Ordering::Less => false,
+            Ordering::Equal => true,
+            Ordering::Greater => panic!("dude how the fuck")
+        }
     }
 }
 
 fn total_possible_fresh(ranges: &[IdRange]) -> u64 {
     let mut globs = Vec::from_iter(ranges.iter().cloned());
     loop {
-        let Some(merged) = merge_ranges(&globs) else {
-            break;
-        };
+        let merged = merge_ranges(globs);
 
-        globs = merged;
+        globs = merged.globs;
+        if merged.done {
+            break;
+        }
     }
 
     globs.iter().map(|glob| glob.len()).sum()
