@@ -164,7 +164,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .collect();
 
         let num_accessible = accessible_rolls.len();
-        println!("Num accessible: {}", num_accessible);
+        println!("Num accessible: {num_accessible}");
 
         if accessible_rolls.is_empty() {
             println!("Done");
@@ -172,13 +172,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         for (x, y) in accessible_rolls {
-            if map.remove(x, y) {
-                removed_count += 1;
-            } else {
+            if !map.remove(x, y) {
                 return Err("Something goofy happened - failed to remove roll".into());
             }
         }
 
+        removed_count += num_accessible;
         println!("All accessible rolls removed!");
     }
 
