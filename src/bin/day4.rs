@@ -69,12 +69,21 @@ impl Map {
             .map_or(false, |i| self.data.contains(i))
     }
 
+    fn remove(&mut self, x: usize, y: usize) -> bool {
+        self.index_from_pos(x, y)
+            .map_or(false, |i| self.data.remove(i))
+    }
+
     fn coordinates(&self) -> MapIter {
         MapIter {
             index: 0,
             rows: self.rows.get(),
             columns: self.columns.get(),
         }
+    }
+
+    fn num_rolls(&self) -> usize {
+        self.data.len()
     }
 }
 
@@ -140,10 +149,41 @@ fn accessible(map: &Map, x: usize, y: usize) -> bool {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let input = read_input(4)?;
-    let map = parse_map(&input)?;
+    let mut map = parse_map(&input)?;
 
-    let num_accessible = map.coordinates().filter(|(x, y)| accessible(&map, *x, *y)).count();
-    println!("Num accessible: {num_accessible}");
+    let mut iteration = 0;
+    let mut removed_count = 0;
+
+    loop {
+        iteration += 1;
+        println!("Iteration #{iteration}");
+
+        let accessible_rolls: Vec<_> = map
+            .coordinates()
+            .filter(|(x, y)| accessible(&map, *x, *y))
+            .collect();
+
+        let num_accessible = accessible_rolls.len();
+        println!("Num accessible: {}", num_accessible);
+
+        if accessible_rolls.is_empty() {
+            println!("Done");
+            break;
+        }
+
+        for (x, y) in accessible_rolls {
+            if map.remove(x, y) {
+                removed_count += 1;
+            } else {
+                return Err("Something goofy happened - failed to remove roll".into());
+            }
+        }
+
+        println!("All accessible rolls removed!");
+    }
+
+    println!("Total removed: {removed_count}");
+    println!("Num remaining: {}", map.num_rolls());
 
     Ok(())
 }
