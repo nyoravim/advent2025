@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct IdRange {
     first: u64,
     last: u64,
@@ -28,6 +28,10 @@ impl IdRange {
         (self.first, self.last)
     }
 
+    pub fn len(&self) -> u64 {
+        self.last - self.first + 1
+    }
+
     pub fn contains(&self, id: u64) -> bool {
         id >= self.first && id <= self.last
     }
@@ -36,6 +40,32 @@ impl IdRange {
         IdIterator {
             id: self.first,
             end: self.last,
+        }
+    }
+
+    pub fn adjacent(&self, other: &IdRange) -> bool {
+        self.last + 1 >= other.first && other.last + 1 >= self.first
+    }
+
+    pub fn or(&self, other: &IdRange) -> Option<IdRange> {
+        if self.adjacent(other) {
+            Some(IdRange {
+                first: self.first.min(other.first),
+                last: self.last.max(other.last),
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn merge(&mut self, other: &IdRange) -> bool {
+        if self.adjacent(other) {
+            self.first = self.first.min(other.first);
+            self.last = self.last.max(other.last);
+
+            true
+        } else {
+            false
         }
     }
 }
