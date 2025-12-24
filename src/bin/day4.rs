@@ -1,17 +1,8 @@
 use std::error::Error;
-use std::num::NonZeroUsize;
 
-use advent25::read_input;
+use advent25::{BitMap, read_input};
 
-use bitvector::BitVector;
-
-struct Map {
-    data: BitVector,
-    rows: NonZeroUsize,
-    columns: NonZeroUsize,
-}
-
-fn parse_map(input: &str) -> Result<Map, &'static str> {
+fn parse_map(input: &str) -> Result<BitMap, &'static str> {
     let data: Vec<_> = input.trim().lines().map(|l| l.trim()).collect();
 
     if data.is_empty() || data[0].is_empty() {
@@ -19,7 +10,7 @@ fn parse_map(input: &str) -> Result<Map, &'static str> {
     } else {
         let rows = data.len();
         let columns = data[0].len();
-        let mut map = BitVector::new(columns * rows);
+        let mut map = BitMap::new(columns, rows);
 
         for y in 0..rows {
             let row: Vec<char> = data[y].chars().collect();
@@ -34,77 +25,15 @@ fn parse_map(input: &str) -> Result<Map, &'static str> {
                     continue;
                 }
 
-                map.insert(x + y * columns);
+                map.add(x, y);
             }
         }
 
-        Ok(Map {
-            data: map,
-            rows: NonZeroUsize::new(rows).unwrap(),
-            columns: NonZeroUsize::new(columns).unwrap(),
-        })
+        Ok(map)
     }
 }
 
-struct MapIter {
-    index: usize,
-    rows: usize,
-    columns: usize,
-}
-
-impl Map {
-    fn index_from_pos(&self, x: usize, y: usize) -> Option<usize> {
-        let columns = self.columns.get();
-        let rows = self.rows.get();
-
-        if x >= columns || y >= rows {
-            None
-        } else {
-            Some(x + y * columns)
-        }
-    }
-
-    fn exists(&self, x: usize, y: usize) -> bool {
-        self.index_from_pos(x, y)
-            .map_or(false, |i| self.data.contains(i))
-    }
-
-    fn remove(&mut self, x: usize, y: usize) -> bool {
-        self.index_from_pos(x, y)
-            .map_or(false, |i| self.data.remove(i))
-    }
-
-    fn coordinates(&self) -> MapIter {
-        MapIter {
-            index: 0,
-            rows: self.rows.get(),
-            columns: self.columns.get(),
-        }
-    }
-
-    fn num_rolls(&self) -> usize {
-        self.data.len()
-    }
-}
-
-impl Iterator for MapIter {
-    type Item = (usize, usize);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let count = self.rows * self.columns;
-        if self.index >= count {
-            None
-        } else {
-            let x = self.index % self.columns;
-            let y = self.index / self.columns;
-
-            self.index += 1;
-            Some((x, y))
-        }
-    }
-}
-
-fn exists(map: &Map, x: usize, y: usize, delta: &(isize, isize)) -> bool {
+fn exists(map: &BitMap, x: usize, y: usize, delta: &(isize, isize)) -> bool {
     let (dx, dy) = delta;
     let Some(x_f) = x.checked_add_signed(*dx) else {
         return false;
@@ -131,14 +60,14 @@ fn parse_delta_index(i: usize) -> Option<(isize, isize)> {
     }
 }
 
-fn num_adjacent(map: &Map, x: usize, y: usize) -> usize {
+fn num_adjacent(map: &BitMap, x: usize, y: usize) -> usize {
     (0..9)
         .filter_map(|i| parse_delta_index(i))
         .filter(|delta| exists(map, x, y, delta))
         .count()
 }
 
-fn accessible(map: &Map, x: usize, y: usize) -> bool {
+fn accessible(map: &BitMap, x: usize, y: usize) -> bool {
     if map.exists(x, y) {
         let adj = num_adjacent(map, x, y);
         adj < 4
@@ -182,7 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!("Total removed: {removed_count}");
-    println!("Num remaining: {}", map.num_rolls());
+    println!("Num remaining: {}", map.num_entities());
 
     Ok(())
 }
